@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>広島市 転入超過・転出超過フロー</title>
+<style>
+  :root {
+    color-scheme: dark;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0a1430;
+    color: #e3eaf6;
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    overflow: hidden;
+    height: 100%;
+  }
+  #stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(ellipse at center, #142142 0%, #060c20 75%);
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .ui {
+    position: absolute;
+    pointer-events: none;
+    color: #e3eaf6;
+  }
+  #title {
+    top: 18px;
+    left: 22px;
+    font-size: clamp(18px, 1.8vw, 26px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  #subtitle {
+    top: calc(18px + clamp(22px, 2.4vw, 36px));
+    left: 22px;
+    font-size: clamp(11px, 1vw, 14px);
+    color: #95a8c7;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  #legend {
+    bottom: 22px;
+    right: 22px;
+    background: rgba(8, 14, 36, 0.62);
+    padding: 14px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: clamp(11px, 0.95vw, 13px);
+    line-height: 1.55;
+    min-width: 200px;
+    pointer-events: auto;
+  }
+  #daycount {
+    bottom: 22px;
+    left: 22px;
+    background: rgba(8, 14, 36, 0.62);
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-family: "Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+    line-height: 1.25;
+    pointer-events: auto;
+    min-width: 130px;
+  }
+  #daycount .dc-label {
+    font-size: clamp(10px, 0.85vw, 12px);
+    color: #95a8c7;
+    letter-spacing: 0.06em;
+  }
+  #daycount .dc-day {
+    font-family: "Menlo","Consolas",monospace;
+    font-size: clamp(24px, 2.4vw, 32px);
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.05;
+    margin: 2px 0;
+  }
+  #daycount .dc-unit {
+    font-family: "Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+    font-size: clamp(12px, 1.1vw, 15px);
+    font-weight: 400;
+    color: #b9c7e0;
+    margin-left: 4px;
+  }
+  #daycount .dc-date {
+    font-size: clamp(11px, 0.95vw, 13px);
+    color: #b9c7e0;
+  }
+  #legend h3 {
+    margin: 0 0 8px 0;
+    font-size: clamp(12px, 1.05vw, 14px);
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.03em;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0;
+  }
+  .swatch {
+    display: inline-block;
+    width: 38px;
+    height: 3px;
+    border-radius: 2px;
+  }
+  .dot-sample {
+    display: inline-block;
+    border-radius: 50%;
+    background: #ffffff;
+  }
+  #disclaimer {
+    top: 22px;
+    left: 22px;
+    transform: translateY(calc(clamp(22px, 2.4vw, 36px) + clamp(11px, 1vw, 14px) + 22px));
+    max-width: clamp(280px, 26vw, 380px);
+    padding: 10px 14px;
+    background: rgba(8, 14, 36, 0.55);
+    border-left: 2px solid rgba(255, 90, 120, 0.55);
+    border-radius: 4px;
+    font-size: clamp(10px, 0.78vw, 11.5px);
+    line-height: 1.55;
+    color: #b9c7e0;
+    pointer-events: auto;
+  }
+  #disclaimer .dc-title {
+    color: #ff8aa0;
+    font-weight: 700;
+    margin-bottom: 4px;
+    font-size: clamp(11px, 0.85vw, 12.5px);
+    letter-spacing: 0.04em;
+  }
+  #disclaimer p {
+    margin: 3px 0;
+  }
+  #legend hr {
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin: 8px 0;
+  }
+  .scale-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 3px 0;
+  }
+  #topflows {
+    top: 22px;
+    right: 22px;
+    background: rgba(8, 14, 36, 0.62);
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: clamp(11px, 0.92vw, 13px);
+    min-width: 220px;
+    pointer-events: auto;
+  }
+  #topflows h3 {
+    margin: 0 0 8px 0;
+    font-size: clamp(12px, 1vw, 14px);
+    font-weight: 600;
+    color: #ffffff;
+  }
+  .tf-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 2px 0;
+    line-height: 1.4;
+  }
+  .tf-in  { color: #ff8aa0; }
+  .tf-out { color: #88ddff; }
+  .tf-name { color: #d6e1f2; }
+  .tf-section {
+    margin-top: 6px;
+    color: #9fb0cf;
+    font-size: 0.88em;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div class="ui" id="title">広島市 転入超過・転出超過フロー</div>
+  <div class="ui" id="subtitle">広島市統計書（令和6年版）B-6 / B-7 ｜ 令和5年 ｜ 日本人</div>
+  <div class="ui" id="legend">
+    <h3>凡例</h3>
+    <div class="legend-row"><span class="swatch" style="background: linear-gradient(90deg,#ff4b6e,#ffb19a);"></span>転入超過（→広島市）</div>
+    <div class="legend-row"><span class="swatch" style="background: linear-gradient(90deg,#5ec8ff,#3b6dff);"></span>転出超過（広島市→）</div>
+    <hr/>
+    <div class="scale-row"><span class="dot-sample" style="width:10px;height:10px;"></span><span style="color:#d6e1f2;">ドット1個 = 10人</span></div>
+    <div style="color:#9fb0cf;margin-top:6px;font-size:0.92em;line-height:1.5;">
+      頻度＝超過人数に比例<br/>
+      1年間を1分間に圧縮
+    </div>
+  </div>
+  <div class="ui" id="daycount">
+    <div class="dc-label">令和5年</div>
+    <div class="dc-day"><span id="dc-day-num">1</span><span class="dc-unit">日目</span></div>
+    <div class="dc-date" id="dc-date">1月1日</div>
+  </div>
+  <div class="ui" id="topflows">
+    <h3>主な超過（令和5年）</h3>
+    <div id="topflows-body"></div>
+  </div>
+  <div class="ui" id="disclaimer">
+    <div class="dc-title">【ご注意】</div>
+    <p>出典：広島市統計書（令和6年版）B-6/B-7「前住地・転出地別 転入/転出人口」令和5年・日本人のみ。</p>
+    <p>表示は転入と転出の差し引き（純流動）であり、グロスの移動量ではありません。</p>
+    <p>1ドット＝10人、1年間を1分に圧縮。曲線・速度は演出で、実際の移動経路や所要時間とは無関係です。</p>
+    <p>県内市町村別の内訳は本資料に含まれません。</p>
+    <p>個人作成の可視化であり、正確性を保証するものではありません。</p>
+  </div>
+</div>
+
+<script>
+const DATA = "__DATA_PLACEHOLDER__";
+
+(function () {
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+  let W = 0, H = 0;
+
+  // Map projection: equirectangular limited to the requested area.
+  // Chugoku-centered view spanning west Kyushu to Tokyo + a touch of Tohoku.
+  const VIEW = {
+    lngMin: 129.4, lngMax: 141.2,
+    latMin: 31.6,  latMax: 37.0,
+  };
+
+  function project(lng, lat) {
+    const aspectGeo = (VIEW.lngMax - VIEW.lngMin) / (VIEW.latMax - VIEW.latMin);
+    const aspectCv = W / H;
+    let x, y;
+    let s;
+    let padX = 0, padY = 0;
+    if (aspectCv > aspectGeo) {
+      // canvas wider than geo: pad horizontally
+      s = H / (VIEW.latMax - VIEW.latMin);
+      padX = (W - s * (VIEW.lngMax - VIEW.lngMin)) / 2;
+    } else {
+      s = W / (VIEW.lngMax - VIEW.lngMin);
+      padY = (H - s * (VIEW.latMax - VIEW.latMin)) / 2;
+    }
+    // Apply a small latitude correction (cos(midLat)) for visual proportions
+    const midLat = (VIEW.latMin + VIEW.latMax) / 2;
+    const cosFactor = Math.cos(midLat * Math.PI / 180);
+    // Recompute with cos factor
+    const geoW = (VIEW.lngMax - VIEW.lngMin) * cosFactor;
+    const geoH = (VIEW.latMax - VIEW.latMin);
+    const aspectGeo2 = geoW / geoH;
+    if (aspectCv > aspectGeo2) {
+      s = H / geoH;
+      padX = (W - s * geoW) / 2;
+      padY = 0;
+    } else {
+      s = W / geoW;
+      padX = 0;
+      padY = (H - s * geoH) / 2;
+    }
+    x = padX + (lng - VIEW.lngMin) * cosFactor * s;
+    y = padY + (VIEW.latMax - lat) * s;
+    return [x, y];
+  }
+
+  function resize() {
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Precompute polygon paths in canvas coordinates per resize.
+  const hCity = project(DATA.hiroshimaCity[0], DATA.hiroshimaCity[1]);
+
+  // Identify focus / dim prefectures.
+  const FOCUS = new Set(['鳥取県','島根県','岡山県','広島県','山口県','大阪府','東京都']);
+
+  // Build flow descriptors for every prefecture with a non-zero NET.
+  // Each flow gets a Bezier control point that bows the curve away from
+  // the straight line, giving the visualization the characteristic arc.
+  function buildFlows() {
+    const list = [];
+    let maxAbs = 0;
+    for (const name in DATA.flows) {
+      const f = DATA.flows[name];
+      const net = f.net;
+      if (!net) continue;
+      const cap = DATA.prefCaps[name];
+      if (!cap) continue;
+      const abs = Math.abs(net);
+      if (abs > maxAbs) maxAbs = abs;
+      list.push({ name, net, abs, cap, ...f });
+    }
+    return { list, maxAbs };
+  }
+  const FLOWS = buildFlows();
+
+  function computeBezier(flow) {
+    // From Hiroshima city to prefecture capital
+    const [hx, hy] = project(DATA.hiroshimaCity[0], DATA.hiroshimaCity[1]);
+    const [px, py] = project(flow.cap[0], flow.cap[1]);
+    const mx = (hx + px) / 2;
+    const my = (hy + py) / 2;
+    // Bow upward (negative y in screen) by a fraction of the chord length.
+    const dx = px - hx;
+    const dy = py - hy;
+    const len = Math.hypot(dx, dy);
+    // Perpendicular unit vector, rotated to bow upward consistently.
+    let nx = -dy / (len || 1);
+    let ny = dx / (len || 1);
+    // Force the normal to point upward (negative y on screen).
+    if (ny > 0) { nx = -nx; ny = -ny; }
+    const bow = Math.min(0.32, 60 / Math.max(40, len)) * len;
+    const cx = mx + nx * bow;
+    const cy = my + ny * bow;
+    return { hx, hy, px, py, cx, cy };
+  }
+
+  // Quadratic Bezier helpers.
+  function qbez(t, a, b, c) {
+    const it = 1 - t;
+    return it * it * a + 2 * it * t * b + t * t * c;
+  }
+  function qbezDeriv(t, a, b, c) {
+    return 2 * (1 - t) * (b - a) + 2 * t * (c - b);
+  }
+
+  // Particles (dots) animated along bezier paths.
+  // Each prefecture's emission rate ∝ |net|, dot size ∝ |net|.
+  // direction: net > 0 → towards Hiroshima (in-migration excess)
+  //            net < 0 → away from Hiroshima (out-migration excess)
+  const PARTICLES = [];
+  const PREF_STATE = new Map(); // name -> { emitAccumulator, params }
+
+  // Color palettes (must precede seedParticles).
+  const COLOR_IN = '#ff4b6e';    // net in (from pref → Hiroshima)
+  const COLOR_IN_BRIGHT = '#ffd1d8';
+  const COLOR_OUT = '#5ec8ff';   // net out (Hiroshima → pref)
+  const COLOR_OUT_BRIGHT = '#dff0ff';
+
+  // Time scale: 1 year of real data is compressed into 1 minute of animation.
+  const SEC_PER_YEAR = 60;
+  // Each dot represents PEOPLE_PER_DOT people moving across one stream.
+  // Emission rate per stream = (|net| / PEOPLE_PER_DOT) dots per year of data
+  //                          = (|net| / PEOPLE_PER_DOT) / SEC_PER_YEAR dots/sec.
+  const PEOPLE_PER_DOT = 10;
+  const PARTICLES_PER_SEC_PER_PERSON = 1 / (PEOPLE_PER_DOT * SEC_PER_YEAR);
+  // All dots are the same radius — a single dot represents the same "10 people"
+  // batch regardless of which stream it travels on.
+  const DOT_RADIUS = 6.8;
+  function speedFor(absLen) {
+    // Constant traversal time per stream (visual cadence only, not data-bound).
+    // Slightly longer than before so the sparser dots remain readable.
+    return 1.2;
+  }
+
+  for (const fl of FLOWS.list) {
+    const bz = computeBezier(fl);
+    PREF_STATE.set(fl.name, {
+      flow: fl,
+      bezier: bz,
+      pathLen: pathLength(bz),
+      emitAcc: Math.random(),
+    });
+  }
+
+  // Pre-seed a handful of particles along each path at random ages so the
+  // first frame already shows a populated visualization. The emission rate
+  // determined by |net| means we expect (rate * lifetime) particles in
+  // steady state — seed roughly that many.
+  function seedParticles() {
+    // Steady-state expected count = rate × duration, plus an occasional extra
+    // so the very first frame already shows the biggest flows.
+    for (const st of PREF_STATE.values()) {
+      const isIn = st.flow.net > 0;
+      const dur = speedFor(st.pathLen);
+      const rate = st.flow.abs * PARTICLES_PER_SEC_PER_PERSON;
+      const expected = Math.max(0, Math.round(rate * dur + 0.5));
+      for (let i = 0; i < expected; i++) {
+        PARTICLES.push({
+          st,
+          forward: !isIn,
+          duration: dur,
+          age: Math.random() * dur,
+          radius: DOT_RADIUS,
+          color: isIn ? COLOR_IN : COLOR_OUT,
+          colorBright: isIn ? COLOR_IN_BRIGHT : COLOR_OUT_BRIGHT,
+        });
+      }
+    }
+  }
+  seedParticles();
+
+  function pathLength(bz) {
+    // Approximate length by sampling.
+    let len = 0;
+    let lastX = bz.hx, lastY = bz.hy;
+    const N = 18;
+    for (let i = 1; i <= N; i++) {
+      const t = i / N;
+      const x = qbez(t, bz.hx, bz.cx, bz.px);
+      const y = qbez(t, bz.hy, bz.cy, bz.py);
+      len += Math.hypot(x - lastX, y - lastY);
+      lastX = x; lastY = y;
+    }
+    return len;
+  }
+
+  // Recompute beziers on resize.
+  let recomputeNeeded = false;
+  const origResize = resize;
+  window.addEventListener('resize', () => { recomputeBeziers(); });
+  function recomputeBeziers() {
+    for (const st of PREF_STATE.values()) {
+      st.bezier = computeBezier(st.flow);
+      st.pathLen = pathLength(st.bezier);
+    }
+  }
+  recomputeBeziers();
+
+  // Prefecture polygon coloring: gentle by region.
+  function prefStyle(name) {
+    const isFocus = FOCUS.has(name);
+    const flow = DATA.flows[name];
+    let fill = isFocus ? 'rgba(70, 110, 180, 0.85)' : 'rgba(48, 70, 120, 0.55)';
+    if (name === '広島県') fill = 'rgba(120, 60, 90, 0.9)';
+    let stroke = 'rgba(180, 210, 255, 0.18)';
+    if (isFocus) stroke = 'rgba(200, 220, 255, 0.4)';
+    return { fill, stroke };
+  }
+
+  function drawPrefectures() {
+    ctx.lineJoin = 'round';
+    for (const f of DATA.geo.features) {
+      const name = f.properties.name;
+      const { fill, stroke } = prefStyle(name);
+      const polys = f.geometry.type === 'Polygon'
+        ? [f.geometry.coordinates]
+        : f.geometry.coordinates;
+      ctx.beginPath();
+      for (const poly of polys) {
+        for (let ringIdx = 0; ringIdx < poly.length; ringIdx++) {
+          const ring = poly[ringIdx];
+          for (let i = 0; i < ring.length; i++) {
+            const [lng, lat] = ring[i];
+            // Skip rings that are entirely outside the view box (perf).
+            const [x, y] = project(lng, lat);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+        }
+      }
+      ctx.fillStyle = fill;
+      ctx.fill('evenodd');
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+  }
+
+  function drawHiroshimaMarker() {
+    const [x, y] = project(DATA.hiroshimaCity[0], DATA.hiroshimaCity[1]);
+    // Pulse halo
+    const t = performance.now() / 1000;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.0);
+    const r1 = 22 + pulse * 8;
+    const grad = ctx.createRadialGradient(x, y, 1, x, y, r1);
+    grad.addColorStop(0, 'rgba(255,90,120,0.75)');
+    grad.addColorStop(0.5, 'rgba(255,90,120,0.22)');
+    grad.addColorStop(1, 'rgba(255,90,120,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, r1, 0, Math.PI * 2);
+    ctx.fill();
+    // Core dot
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, 6.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff4060';
+    ctx.beginPath();
+    ctx.arc(x, y, 4.6, 0, Math.PI * 2);
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 15px "Hiragino Sans","Yu Gothic","Meiryo",sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 6;
+    ctx.fillText('広島市', x + 12, y - 14);
+    ctx.shadowBlur = 0;
+  }
+
+  function drawFlowPath(st) {
+    const bz = st.bezier;
+    const isIn = st.flow.net > 0;
+    const baseColor = isIn ? COLOR_IN : COLOR_OUT;
+    const absN = st.flow.abs;
+    // Stroke width slightly scales with magnitude (subtle).
+    const w = Math.max(0.6, Math.min(1.8, 0.6 + absN / 1200));
+    const alpha = Math.max(0.18, Math.min(0.55, 0.18 + absN / 2200));
+    ctx.beginPath();
+    ctx.moveTo(bz.hx, bz.hy);
+    ctx.quadraticCurveTo(bz.cx, bz.cy, bz.px, bz.py);
+    ctx.lineWidth = w;
+    ctx.strokeStyle = baseColor + alphaToHex(alpha);
+    ctx.stroke();
+  }
+
+  function alphaToHex(a) {
+    const v = Math.max(0, Math.min(255, Math.round(a * 255)));
+    return ('0' + v.toString(16)).slice(-2);
+  }
+
+  // Per-prefecture label offset overrides so labels stay readable around
+  // their marker without overlapping the prefecture polygon.
+  const LABEL_OFFSET = {
+    '東京都':   { dx:  8, dy: -10, align: 'left'  },
+    '大阪府':   { dx: -8, dy: -10, align: 'right' },
+    '岡山県':   { dx:  6, dy:  10, align: 'left'  },
+    '島根県':   { dx:  0, dy: -12, align: 'center'},
+    '鳥取県':   { dx:  8, dy: -10, align: 'left'  },
+    '山口県':   { dx: -8, dy:  10, align: 'right' },
+  };
+
+  function drawPrefLabels() {
+    // Subtle labels for focus prefectures plus a few notable flow targets.
+    ctx.font = '600 12px "Hiragino Sans","Yu Gothic","Meiryo",sans-serif';
+    ctx.textBaseline = 'middle';
+    const draw = (name, opts = {}) => {
+      const cap = DATA.prefCaps[name];
+      if (!cap) return;
+      const [x, y] = project(cap[0], cap[1]);
+      const off = LABEL_OFFSET[name] || { dx: 6, dy: -10, align: 'left' };
+      const isFocus = FOCUS.has(name);
+      // Anchor dot
+      ctx.fillStyle = isFocus ? 'rgba(255,255,255,0.92)' : 'rgba(220,232,255,0.75)';
+      ctx.beginPath();
+      ctx.arc(x, y, isFocus ? 3.2 : 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Label
+      ctx.fillStyle = isFocus ? '#ffffff' : 'rgba(220,232,255,0.85)';
+      ctx.textAlign = off.align;
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 4;
+      const label = name.replace(/県|府|都/, '');
+      ctx.fillText(label, x + off.dx, y + off.dy);
+      ctx.shadowBlur = 0;
+    };
+    for (const name of FOCUS) {
+      if (name === '広島県') continue;
+      draw(name);
+    }
+  }
+
+  // Particle emission and update
+  function tickEmissionAndUpdate(dt) {
+    for (const st of PREF_STATE.values()) {
+      const rate = st.flow.abs * PARTICLES_PER_SEC_PER_PERSON;
+      st.emitAcc += rate * dt;
+      while (st.emitAcc >= 1) {
+        st.emitAcc -= 1;
+        const isIn = st.flow.net > 0;
+        PARTICLES.push({
+          st,
+          forward: !isIn,
+          duration: speedFor(st.pathLen),
+          age: 0,
+          radius: DOT_RADIUS,
+          color: isIn ? COLOR_IN : COLOR_OUT,
+          colorBright: isIn ? COLOR_IN_BRIGHT : COLOR_OUT_BRIGHT,
+        });
+      }
+    }
+    // Update existing particles.
+    for (let i = PARTICLES.length - 1; i >= 0; i--) {
+      const p = PARTICLES[i];
+      p.age += dt;
+      if (p.age >= p.duration) {
+        PARTICLES.splice(i, 1);
+      }
+    }
+  }
+
+  function drawParticles() {
+    // Pass 1: soft glow underlay
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of PARTICLES) {
+      const f = p.age / p.duration;
+      const t = p.forward ? f : (1 - f);
+      const bz = p.st.bezier;
+      const x = qbez(t, bz.hx, bz.cx, bz.px);
+      const y = qbez(t, bz.hy, bz.cy, bz.py);
+      const fade = Math.sin(Math.PI * f);
+      const glowR = p.radius * 2.4;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+      grad.addColorStop(0, p.color);
+      grad.addColorStop(1, p.color + '00');
+      ctx.globalAlpha = 0.35 * fade;
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Pass 2: solid dot + inner highlight
+    for (const p of PARTICLES) {
+      const f = p.age / p.duration;
+      const t = p.forward ? f : (1 - f);
+      const bz = p.st.bezier;
+      const x = qbez(t, bz.hx, bz.cx, bz.px);
+      const y = qbez(t, bz.hy, bz.cy, bz.py);
+      const fade = Math.sin(Math.PI * f);
+      const a = 0.55 + 0.45 * fade;
+      ctx.fillStyle = p.colorBright;
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(x, y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = a * 0.85;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, p.radius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Populate the top-flows panel based on the loaded data.
+  (function populateTopFlows() {
+    const body = document.getElementById('topflows-body');
+    if (!body) return;
+    const items = [];
+    for (const name in DATA.flows) {
+      const f = DATA.flows[name];
+      if (!f.net) continue;
+      items.push({ name, net: f.net });
+    }
+    const ins = items.filter((x) => x.net > 0).sort((a, b) => b.net - a.net).slice(0, 3);
+    const outs = items.filter((x) => x.net < 0).sort((a, b) => a.net - b.net).slice(0, 5);
+
+    let html = '<div class="tf-section">転入超過（流入）</div>';
+    for (const it of ins) {
+      html += `<div class="tf-row"><span class="tf-name">${it.name}</span><span class="tf-in">+${it.net.toLocaleString()}</span></div>`;
+    }
+    html += '<div class="tf-section">転出超過（流出）</div>';
+    for (const it of outs) {
+      html += `<div class="tf-row"><span class="tf-name">${it.name}</span><span class="tf-out">${it.net.toLocaleString()}</span></div>`;
+    }
+    body.innerHTML = html;
+  })();
+
+  // Day counter: 1 minute of animation = 365 days. The animation runs
+  // indefinitely and the counter loops at day 365 back to day 1.
+  const DAYS_PER_YEAR = 365;
+  const dcDayNum = document.getElementById('dc-day-num');
+  const dcDate   = document.getElementById('dc-date');
+  let dayElapsed = 0; // floating-point days
+  function dayToMonthDay(d) {
+    // d in [1, 365]
+    const monthLens = [31,28,31,30,31,30,31,31,30,31,30,31];
+    let rem = Math.max(1, Math.min(DAYS_PER_YEAR, Math.floor(d)));
+    for (let m = 0; m < 12; m++) {
+      if (rem <= monthLens[m]) return [m + 1, rem];
+      rem -= monthLens[m];
+    }
+    return [12, 31];
+  }
+
+  // Main loop
+  let lastTime = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    dayElapsed += dt * (DAYS_PER_YEAR / SEC_PER_YEAR);
+    if (dayElapsed >= DAYS_PER_YEAR) dayElapsed -= DAYS_PER_YEAR;
+    const dayInt = Math.floor(dayElapsed) + 1;
+    if (dcDayNum) dcDayNum.textContent = dayInt;
+    if (dcDate) {
+      const [mo, da] = dayToMonthDay(dayInt);
+      dcDate.textContent = `${mo}月${da}日`;
+    }
+
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+
+    drawPrefectures();
+    // Draw flow paths (background lines)
+    for (const st of PREF_STATE.values()) drawFlowPath(st);
+    drawPrefLabels();
+    drawHiroshimaMarker();
+
+    tickEmissionAndUpdate(dt);
+    drawParticles();
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
