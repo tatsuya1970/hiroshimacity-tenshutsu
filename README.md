@@ -22,6 +22,12 @@
 - 対象者: **日本人のみ**（原典の注書きに基づく）
 - 入手元: https://www.city.hiroshima.lg.jp/shisei/toukei/1006109/1027848/1037846.html
 
+### 地図データ
+
+- **国土地理院「地球地図日本」** を加工（Douglas-Peucker 簡略化）して使用
+- 中継元: [dataofjapan/land](https://github.com/dataofjapan/land) の `japan.geojson`
+- 国土地理院 地球地図日本: https://www.gsi.go.jp/kankyochiri/gm_japan.html
+
 ## 可視化ルール
 
 | パラメータ | 値 | 備考 |
@@ -116,7 +122,8 @@ node data/build_html.js
 
 ## クレジット
 
-[徒然研究室さんのX投稿](https://x.com/tsurezure_lab/status/2056801184737063362)（福岡市版）にインスパイアされて作成しました。
+- 表現: [徒然研究室さんのX投稿](https://x.com/tsurezure_lab/status/2056801184737063362)（福岡市版）にインスパイアされて作成
+- 地図データ: 国土地理院「[地球地図日本](https://www.gsi.go.jp/kankyochiri/gm_japan.html)」を加工して使用
 
 ## 免責
 
