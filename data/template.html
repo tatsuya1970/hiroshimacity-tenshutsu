@@ -127,7 +127,7 @@
     left: 22px;
     transform: translateY(calc(clamp(22px, 2.4vw, 36px) + clamp(11px, 1vw, 14px) + 22px));
     max-width: clamp(280px, 26vw, 380px);
-    padding: 10px 14px;
+    padding: 10px 32px 10px 14px;
     background: rgba(8, 14, 36, 0.55);
     border-left: 2px solid rgba(255, 90, 120, 0.55);
     border-radius: 4px;
@@ -135,6 +135,36 @@
     line-height: 1.55;
     color: #b9c7e0;
     pointer-events: auto;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  #disclaimer.is-hidden {
+    opacity: 0;
+    transform: translateY(calc(clamp(22px, 2.4vw, 36px) + clamp(11px, 1vw, 14px) + 22px)) translateX(-12px);
+    pointer-events: none;
+  }
+  #disclaimer-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    background: transparent;
+    color: #95a8c7;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  #disclaimer-close:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+  #disclaimer-close:focus {
+    outline: 1px solid rgba(255,255,255,0.25);
+    outline-offset: 1px;
   }
   #disclaimer .dc-title {
     color: #ff8aa0;
@@ -233,6 +263,7 @@
     <div id="topflows-body"></div>
   </div>
   <div class="ui" id="disclaimer">
+    <button type="button" id="disclaimer-close" aria-label="閉じる" title="閉じる">×</button>
     <div class="dc-title">【ご注意】</div>
     <p>出典：広島市統計書（令和6年版）B-6/B-7「前住地・転出地別 転入/転出人口」令和5年・日本人のみ。</p>
     <p>表示は転入と転出の差し引き（純流動）であり、グロスの移動量ではありません。</p>
@@ -667,6 +698,17 @@ const DATA = "__DATA_PLACEHOLDER__";
     }
     ctx.globalAlpha = 1;
   }
+
+  // Dismiss the disclaimer when × is clicked.
+  (function setupDisclaimerClose() {
+    const el = document.getElementById('disclaimer');
+    const btn = document.getElementById('disclaimer-close');
+    if (!el || !btn) return;
+    btn.addEventListener('click', () => {
+      el.classList.add('is-hidden');
+      setTimeout(() => { el.style.display = 'none'; }, 300);
+    });
+  })();
 
   // Populate the top-flows panel based on the loaded data.
   (function populateTopFlows() {
