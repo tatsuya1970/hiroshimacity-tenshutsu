@@ -38,5 +38,5 @@ const dataLiteral = JSON.stringify(data);
 const template = fs.readFileSync(path.join(__dirname, 'template.html'), 'utf8');
 const html = template.replace('"__DATA_PLACEHOLDER__"', dataLiteral);
 
-fs.writeFileSync(path.join(__dirname, '..', 'hiroshima_flow.html'), html);
-process.stderr.write(`Wrote hiroshima_flow.html (${html.length} bytes)\n`);
+fs.writeFileSync(path.join(__dirname, '..', 'index.html'), html);
+process.stderr.write(`Wrote index.html (${html.length} bytes)\n`);
